@@ -32,3 +32,15 @@ export const redisCache = (cacheKey: string, ttl: number = 3600) => {
     }
   };
 };
+
+export const invalidateRedisCache = (cacheKey: string) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      await redisClient.del(cacheKey)
+      } catch (error) {
+      console.error('Redis get error:', error)
+    } finally {
+      return next();
+    }
+  };
+};

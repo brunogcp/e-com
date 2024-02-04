@@ -14,7 +14,7 @@ export const addProduct = async (req: Request, res: Response) => {
     }
 
     const newProduct = await Product.create({ name, description, price, imageUrl });
-    return res.status(201).json(newProduct);
+    return res.status(201).json({...newProduct, message: 'Produto cadastrado'});
   } catch (error: unknown) {
     return res.status(500).json({ message: 'Erro ao adicionar produto', error: error instanceof Error ? error.message : '' });
   }
@@ -61,7 +61,7 @@ export const updateProduct = async (req: Request, res: Response) => {
     const product = await Product.findByPk(id);
     if (product) {
       const updatedProduct = await product.update({ name, description, price, imageUrl });
-      return res.json(updatedProduct);
+      return res.json({...updatedProduct, message: 'Produto Atualizado'});
     } else {
       return res.status(404).json({ message: 'Produto não encontrado' });
     }
@@ -82,5 +82,22 @@ export const deleteProduct = async (req: Request, res: Response) => {
     }
   } catch (error: unknown) {
     res.status(500).json({ message: 'Erro ao deletar produto', error: error instanceof Error ? error.message : '' });
+  }
+};
+
+export const addProductImage = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const imagePath = req.file.path; // Caminho da imagem salva
+
+  try {
+    const product = await Product.findByPk(id);
+    if (product) {
+      await product.update({ imageUrl: imagePath.split('\\')[1] });
+      return res.status(200).json({ message: 'Imagem adicionada com sucesso!', path: imagePath });
+    } else {
+      return res.status(404).json({ message: 'Produto não encontrado' });
+    }
+  } catch (error) {
+    return res.status(500).json({ message: 'Erro ao adicionar imagem', error: error instanceof Error ? error.message : '' });
   }
 };

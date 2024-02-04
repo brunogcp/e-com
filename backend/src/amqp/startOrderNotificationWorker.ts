@@ -1,5 +1,6 @@
 import amqp from 'amqplib';
 import dotenv from 'dotenv';
+import { sendOrderNotificationEmail } from 'src/queue/sendOrderNotificationEmail';
 dotenv.config();
 
 export async function startOrderNotificationWorker() {
@@ -22,12 +23,15 @@ export async function startOrderNotificationWorker() {
   // Bind para todas as chaves de roteamento relacionadas a pedidos
   channel.bindQueue(queue.queue, exchange, 'order.*');
 
-  channel.consume(queue.queue, (msg) => {
+  channel.consume(queue.queue, async (msg) => {
     if (msg?.content) {
       const notificationData = JSON.parse(msg.content.toString());
       console.log(" [x] Received %s", notificationData);
 
-      // Implementa a lógica para enviar a notificação ao usuário
+      const email = notificationData.email
+      const status = notificationData.status
+      const products = notificationData.products
+      await sendOrderNotificationEmail(email, status, products)
     }
   }, {
     noAck: true

@@ -4,11 +4,12 @@ import Product from './Product';
 import User from './User';
 import OrderProduct from './OrderProduct';
 
-interface OrderAttributes {
+export interface OrderAttributes {
   id?: number;
   userId: number;
   total: number;
   status: string;
+  products?: Product[]
 }
 
 interface OrderInstance extends Model<OrderAttributes>, OrderAttributes {

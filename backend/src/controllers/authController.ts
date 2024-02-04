@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
 import User from '../models/User';
+import { sendConfirmationEmail } from 'src/queue/sendConfirmationEmail';
 
 export const registerUser = async (req: Request, res: Response) => {
   try {
@@ -35,6 +36,8 @@ export const registerUser = async (req: Request, res: Response) => {
       email,
       password: hashedPassword
     }, { raw: true });
+
+    await sendConfirmationEmail(email)
 
     return res.status(201).json({
       message: 'Usuário registrado com sucesso.',
@@ -77,6 +80,8 @@ export const loginUser = async (req: Request, res: Response) => {
     return res.json({
       message: 'Login bem-sucedido.',
       token,
+      name: user.name,
+      isAdmin: user.admin
     });
   } catch (error: unknown) {
     return res.status(500).json({ message: 'Erro no servidor ao tentar login.', error: error instanceof Error ? error.message : '' });

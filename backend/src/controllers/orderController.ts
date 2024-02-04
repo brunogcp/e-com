@@ -47,17 +47,18 @@ export const createOrder = async (req: Request, res: Response) => {
     }
 
     await newOrder.update({ total }, { transaction: t });
-
+    const order = await Order.findByPk(newOrder.dataValues.id, { include: Product , transaction: t });
     await publishOrderNotification({
-      orderId: newOrder.dataValues.id || 0,
+      orderId: order.dataValues.id || 0,
       userId,
       email,
-      status
-    })
+      status,
+      products: order.dataValues.products.map((product) => product.get({ plain: true }))
+    });
 
     await t.commit();
 
-    return res.status(201).json(newOrder);
+    return res.status(201).json({...newOrder, message: 'Pedido Criado!'});
   } catch (error: unknown) {
     await t.rollback();
     return res.status(500).json({ message: 'Erro ao criar pedido', error: error instanceof Error ? error.message : '' });
@@ -78,7 +79,7 @@ export const getOrders = async (req: Request, res: Response) => {
     const orders = await Order.findAll({ where, include: [ { model: Product } ] });
     res.json(orders);
   } catch (error: unknown) {
-    res.status(500).json({ message: 'Erro ao listar ordens', error: error instanceof Error ? error.message : '' });
+    res.status(500).json({ message: 'Erro ao listar Pedidos', error: error instanceof Error ? error.message : '' });
   }
 };
 
@@ -89,10 +90,10 @@ export const getOrderById = async (req: Request, res: Response) => {
     if (order) {
       res.json(order);
     } else {
-      res.status(404).json({ message: 'Ordem não encontrado' });
+      res.status(404).json({ message: 'Pedido não encontrado' });
     }
   } catch (error: unknown) {
-    res.status(500).json({ message: 'Erro ao buscar ordem', error: error instanceof Error ? error.message : '' });
+    res.status(500).json({ message: 'Erro ao buscar Pedido', error: error instanceof Error ? error.message : '' });
   }
 };
 
@@ -114,10 +115,10 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Status não é válido' });  
     }
 
-    const order = await Order.findByPk(id, { transaction: t });
+    const order = await Order.findByPk(id, { include: Product , transaction: t });
     if (order) {
       const updatedOrder = await order.update({ status }, { transaction: t });
-
+      
       const userId = parseInt(req.user?.id);
       const email = req.user?.email;
 
@@ -125,18 +126,19 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
         orderId: updatedOrder.dataValues.id || 0,
         userId,
         email,
-        status
+        status,
+        products: updatedOrder.dataValues.products.map((product) => product.get({ plain: true }))
       });
 
       await t.commit(); 
-      return res.json(updatedOrder);
+      return res.json({...updatedOrder.get({ plain: true }), message: 'Pedido Atualizada!'});
     } else {
       await t.rollback();
-      return res.status(404).json({ message: 'Ordem não encontrada' });
+      return res.status(404).json({ message: 'Pedido não encontrada' });
     }
   } catch (error: unknown) {
     await t.rollback();
-    return res.status(500).json({ message: 'Erro ao atualizar ordem', error: error instanceof Error ? error.message : '' });
+    return res.status(500).json({ message: 'Erro ao atualizar Pedido', error: error instanceof Error ? error.message : '' });
   }
 };
 

@@ -3,10 +3,13 @@ import session from 'express-session';
 import RedisStore from 'connect-redis';
 import dotenv from 'dotenv';
 import {createClient} from 'redis';
+import path from 'path';
+import cors from 'cors'
 
 import authRoutes from './routes/authRoutes';
 import productRoutes from './routes/productRoutes';
 import orderRoutes from './routes/orderRoutes';
+import helmet from 'helmet';
 
 dotenv.config();
 
@@ -39,8 +42,17 @@ app.use(
   })
 );
 
-// Middleware para parse do body
 app.use(express.json());
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' ? ['https://bgcp.com.com.br', 'https://api.bgcp.com.br'] : ['http://localhost:4173', 'http://localhost:5173', 'http://127.0.0.1:4173', 'http://127.0.0.1:5173'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  credentials: true,
+  allowedHeaders: ['Accept', 'Content-Type', 'Origin', 'authorization ']
+}));
+app.use(helmet());
+
+// Servir arquivos estaticamente da pasta 'public'
+app.use(express.static(path.join(__dirname, '../public')));
 
 // Rotas
 app.use('/api/auth', authRoutes);
